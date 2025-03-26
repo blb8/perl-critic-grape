@@ -30,5 +30,5 @@
 	"resources" : {
 		"bugtracker": {"web":"https://github.com/blb8/perl-critic-grape/issues"},
 		"repository": {"url":"git://github.com/blb8/perl-critic-grape.git"}
-	},
+	}
 }
