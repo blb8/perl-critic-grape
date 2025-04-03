@@ -98,7 +98,7 @@ sub applies_to           { return 'PPI::Token::Word'  }
 
 sub violates {
 	my ($self,$elem,undef)=@_;
-	if(!is_perl_builtin($elem))                         { return }
+	if(!is_function_call($elem))                        { return }
 	if(!exists($$self{_operators}{ $elem->content() })) { return }
 	if(exists($$self{_allow}{ $elem->content() }))      { return }
 

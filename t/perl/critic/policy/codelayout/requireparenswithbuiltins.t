@@ -9,7 +9,7 @@ use Test::More tests=>2;
 my $failure=qr/Builtin.*without parentheses/;
 
 subtest 'Valid cases'=>sub {
-	plan tests=>8;
+	plan tests=>12;
 	my $critic=Perl::Critic->new(-profile=>'NONE',-only=>1,-severity=>1);
 	$critic->add_policy(-policy=>'Perl::Critic::Policy::CodeLayout::RequireParensWithBuiltins',-params=>{allow=>'rand srand'});
 	foreach my $valid (
@@ -21,6 +21,10 @@ subtest 'Valid cases'=>sub {
 		['not mandatory',   'my $x=lc("hi");'],
 		['not builtin',     'my $x=function "hi";'],
 		['allowed rand',    'my $x=rand 5;'],
+		['subroutine',      'sub log {1}'],
+		['method bare',     'my $x=$module->log;'],
+		['method child',    'my $x=$module->log->thing();'],
+		['key',             'my %hash=(one=>1,log=>0,two=>2);'],
 	) {
 		is_deeply([$critic->critique(\$$valid[1])],[],$$valid[0]);
 	}
