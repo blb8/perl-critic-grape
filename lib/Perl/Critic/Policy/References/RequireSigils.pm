@@ -49,6 +49,7 @@ sub violates {
 	if($next->isa('PPI::Token::Word') && is_method_call($next)) { return }
 
 	if($next->isa('PPI::Structure::Subscript')) { return $self->invalid($elem) }
+	if($next->isa('PPI::Structure::List'))      { return $self->invalid($elem) }
 	if($next->isa('PPI::Token::Cast'))          { return $self->invalid($elem) }
 
 	return;
