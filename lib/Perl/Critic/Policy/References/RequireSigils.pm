@@ -71,11 +71,11 @@ Perl::Critic::Policy::References::RequireSigils - Only use dereferencing arrows 
 
 Post-conditional and post-fix operators are harder to read and maintain, especially within other operators and functions that work only in infix or prefix/function-call mode.  Since certain forms of arrow-dereferencing don't work inside quoted constructs, there can be additional confusion about uniformity of expected behaviors:
 
-	print "Name:  $href->{name}" # no
-	print "Name:  $$href{name}"  # yes
+	print "Name:  ",$href->{name} # no
+	print "Name:  ",$$href{name}  # yes
 
-	print "Item:  $aref->[1]"    # no
-	print "Item:  $$aref[1]"     # yes
+	print "Item:  ",$aref->[1]    # no
+	print "Item:  ",$$aref[1]     # yes
 
 	my @A=$x->@*;                # no
 	my @A=@$x;                   # yes
@@ -83,15 +83,23 @@ Post-conditional and post-fix operators are harder to read and maintain, especia
 	my $y=$x->method();          # yes
 	print "$x->method();"        # invalid code
 
+	print "Name:  $href->{name}" # no  (not yet checked)
+	print "Name:  $$href{name}"  # yes (not yet checked)
+
+	print "Item:  $aref->[1]"    # no  (not yet checked)
+	print "Item:  $$aref[1]"     # yes (not yet checked)
+
 =head1 CONFIGURATION
 
 None.
 
-Proposed:  Because C<@$x> is a direct casting operation, whereas C<@{ $x }> is a block operator, performance goals may suggest that the latter is a violation of the expected pattern for sigils.  In particular it signals "there is a complicated expansion here", when it fact it is just meant as a direct casting operator.  Future configuration may support enabling required double sigils where possible.
-
 =head1 NOTES
 
-Note presently well-tested.  There may be some false violations.
+Not presently well-tested.  There may be some false violations.
+
+Inside Quote/QuoteLike expressions, L<String::InterpolatedVariables> will be used in the future to establish consistency.
+
+Proposed:  Because C<@$x> is a direct casting operation, whereas C<@{ $x }> is a block operator, performance goals may suggest that the latter is a violation of the expected pattern for sigils.  In particular it signals "there is a complicated expansion here", when it fact it is just meant as a direct casting operator.  Future configuration may support enabling required double sigils where possible.
 
 =head1 SEE ALSO
 
