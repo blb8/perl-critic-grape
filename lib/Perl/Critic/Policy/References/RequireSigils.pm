@@ -18,10 +18,10 @@ Readonly::Scalar my $EXPL  => undef;
 sub supported_parameters {
 	return (
 		{
-			name           => 'nothingcomestomind',
-			description    => 'not expecting to need any options',
-			default_string => '',
-			behavior       => 'string list',
+			name           => 'directcast',
+			description    => 'Prohibit block-style casting of direct references (not yet available).',
+			default_string => '1',
+			behavior       => 'boolean',
 		},
 	);
 }
