@@ -20,16 +20,15 @@ subtest 'Invalid loop control'=>sub {
 		q|for(0..3) { ... }|,
 		q|foreach $_ (0..3) { ... }|,
 		q|for $_ (0..3) { ... }|,
-		q|if($_=shift(A)) { ... }|,
-		q|while($_=shift(A)) { ... }|,
-		# ------------------------------ working to here
+		q|if($_=shift(@A)) { ... }|,
+		q|while($_=shift(@A)) { ... }|,
 	) {
 		like(($critic->critique(\$code))[0],$failure,$code);
 	}
 };
 
 subtest 'Valid loop control'=>sub {
-	plan tests=>15;
+	plan tests=>21;
 	my $critic=Perl::Critic->new(-profile=>'NONE',-only=>1,-severity=>1);
 	$critic->add_policy(-policy=>'Perl::Critic::Policy::Variables::ProhibitTopicIterator');
 	ok(join('',map {$_->get_themes()} $critic->policies()),'themes');
@@ -48,7 +47,12 @@ subtest 'Valid loop control'=>sub {
 		q|for $i (0..3) { ... }|,
 		q|if(my $i=shift(A)) { ... }|,
 		q|while(my $i=shift(A)) { ... }|,
-		# ------------------------------ working to here
+		q|if(/re/) { ... }|,               # Use of $_ is okay
+		q|if($_=~/re/) { ... }|,           # Unnecessary, but okay
+		q|print "$_" for (1..3)|,          # postfix controls are not rejected
+		q|print "$_" foreach (1..3)|,      # postfix controls are not rejected
+		q|print "$_" while($_=shift(@A))|, # postfix controls are not rejected
+		q|print "$_" if($_=shift(@A))|,    # postfix controls are not rejected
 	) {
 		is_deeply([$critic->critique(\$code)],[],$code);
 	}
