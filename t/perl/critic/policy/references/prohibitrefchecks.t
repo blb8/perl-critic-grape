@@ -3,11 +3,60 @@
 use strict;
 use warnings;
 use Perl::Critic;
+use Perl::Critic::Policy::References::ProhibitRefChecks;
+use PPI;
 use Ref::Util;
 
-use Test::More tests=>11;
+use Test::Deep;
+use Test::More tests=>12;
 
 my $failure=qr/Do not perform manual ref/;
+
+subtest 'decompose'=>sub {
+	plan tests=>33;
+	my $decompose=sub {
+		my ($code)=@_;
+		my $doc=PPI::Document->new(\$code);
+		my $node=$doc->find_first('PPI::Token::Word');
+		return Perl::Critic::Policy::References::ProhibitRefChecks::decompose($node);
+	};
+	my %tests=(
+		'lc ref($x) eq "array"'          => ['eq','array'],
+		'ref $$aref[0] !~ /ARRAY/'       => ['!~','/ARRAY/'],
+		'ref $$aref[0] && $x=~/\d/'      => [undef],
+		'ref $$aref[0] =~ /CODE/'        => ['=~','/CODE/'],
+		'ref $$aref[0] eq "CODE" && 1'   => ['eq','code'],
+		'ref $$aref[0] eq "CODE"'        => ['eq','code'],
+		'ref $$aref[0] eq ref $y'        => ['eq','ref'],
+		'ref $$aref[0] ne "CODE"?1:0'    => ['ne','code'],
+		'ref $$aref[0]'                  => [undef],
+		'ref $href->{k} !~ /ARRAY/'      => ['!~','/ARRAY/'],
+		'ref $href->{k} && $x=~/\d/'     => [undef],
+		'ref $href->{k} =~ /CODE/'       => ['=~','/CODE/'],
+		'ref $href->{k} eq "CODE" && 1'  => ['eq','code'],
+		'ref $href->{k} eq "CODE"'       => ['eq','code'],
+		'ref $href->{k} eq ref $y'       => ['eq','ref'],
+		'ref $href->{k} ne "CODE"?1:0'   => ['ne','code'],
+		'ref $href->{k}'                 => [undef],
+		'ref($$aref[0]) !~ /ARRAY/'      => ['!~','/ARRAY/'],
+		'ref($$aref[0]) && $x=~/\d/'     => [undef],
+		'ref($$aref[0]) =~ /CODE/'       => ['=~','/CODE/'],
+		'ref($$aref[0]) eq "CODE" && 1'  => ['eq','code'],
+		'ref($$aref[0]) eq "CODE"'       => ['eq','code'],
+		'ref($$aref[0]) eq ref $y'       => ['eq','ref'],
+		'ref($$aref[0]) ne "CODE"?1:0'   => ['ne','code'],
+		'ref($$aref[0])'                 => [undef],
+		'ref($href->{k}) !~ /ARRAY/'     => ['!~','/ARRAY/'],
+		'ref($href->{k}) && $x=~/\d/'    => [undef],
+		'ref($href->{k}) =~ /CODE/'      => ['=~','/CODE/'],
+		'ref($href->{k}) eq "CODE" && 1' => ['eq','code'],
+		'ref($href->{k}) eq "CODE"'      => ['eq','code'],
+		'ref($href->{k}) eq ref $y'      => ['eq','ref'],
+		'ref($href->{k}) ne "CODE"?1:0'  => ['ne','code'],
+		'ref($href->{k})'                => [undef],
+	);
+	while(my ($code,$expect)=each %tests) { is_deeply([&$decompose($code)],$expect,"decompose:  $code") }
+};
 
 subtest 'Valid Ref::Util'=>sub {
 	plan tests=>384;
