@@ -7,7 +7,6 @@ use Perl::Critic::Policy::References::ProhibitRefChecks;
 use PPI;
 use Ref::Util;
 
-use Test::Deep;
 use Test::More tests=>12;
 
 my $failure=qr/Do not perform manual ref/;
