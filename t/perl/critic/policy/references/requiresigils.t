@@ -10,7 +10,7 @@ use Test::More tests=>2;
 my $failure=qr/Only use arrows for methods/;
 
 subtest 'Valid cases'=>sub {
-	plan tests=>21;
+	plan tests=>27;
 	my $critic=Perl::Critic->new(-profile=>'NONE',-only=>1,-severity=>1);
 	$critic->add_policy(-policy=>'Perl::Critic::Policy::References::RequireSigils');
 	#
@@ -36,8 +36,12 @@ subtest 'Valid cases'=>sub {
 		q|my $y=${$x}{hi};|,       # uhhgly, but not yet rejected
 		q|my @A=@{$x};|,           # uhhgly, but not yet rejected
 		q|my %H=%{$x};|,           # uhhgly, but not yet rejected
-		# q|print "a $$x b";|,     # not yet supported
-		# q|print "a $$x[0] b";|,  # not yet supported
+		q|print "a $$x b";|,
+		q|print "a $$x[0] b";|,
+		q|print "a X->[0] b";|,
+		q|print "a X->{hi} b";|,
+		q|print "a \$X->[0] b";|,
+		q|print "a \$X->{hi} b";|,
 	) {
 		is_deeply([$critic->critique(\$code)],[],$code);
 	}
@@ -59,7 +63,8 @@ subtest 'Invalid cases'=>sub {
 		q|print 'b',$f->(1);|,
 		q|print 'b',$x->@*;|,
 		q|print 'b',$x->%*;|,
-		# q|print "a $x->[0] b";|,  # not yet supported
+		# q|print "a $x->[0] b";|,  # off by default
+		# q|print "a $x->{hi} b";|, # off by default
 	) {
 		like(($critic->critique(\$code))[0],$failure,$code);
 	}

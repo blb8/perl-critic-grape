@@ -15,6 +15,8 @@
 				"Perl::Critic::Policy": "1.156",
 				"Perl::Critic::Utils": "1.156",
 				"perl": "5.16.3",
+				"PPI::Document": "UNKNOWN",
+				"PPIx::QuoteLike": "UNKNOWN",
 				"Readonly": "2.05"
 			}
 		},

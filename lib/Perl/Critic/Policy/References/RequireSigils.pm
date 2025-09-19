@@ -8,6 +8,9 @@ use Readonly;
 use Perl::Critic::Utils qw/:severities :classification/;
 use base 'Perl::Critic::Policy';
 
+use PPI::Document;
+use PPIx::QuoteLike;
+
 our $VERSION = '0.0.1';
 
 Readonly::Scalar my $DESC  => q{Only use arrows for methods};
@@ -23,10 +26,16 @@ sub supported_parameters {
 			default_string => '1',
 			behavior       => 'boolean',
 		},
+		{
+			name           => 'interpolation',
+			description    => 'Check interpolated strings for arrow-like patterns (not yet available).',
+			default_string => '0',
+			behavior       => 'boolean',
+		},
 	);
 }
 
-sub applies_to           { return 'PPI::Token::Operator' }
+sub applies_to           { return qw/PPI::Token::Operator PPI::Token::Quote::Double/ }
 sub default_severity     { return $SEVERITY_LOW }
 sub default_themes       { return qw/cosmetic/ }
 
@@ -39,18 +48,40 @@ sub invalid {
 	return $self->violation(sprintf("%s%s",$DESC,$note),$EXPL,$elem);
 }
 
-sub violates {
-	my ($self,$elem,undef)=@_;
-	if(!$elem->isa('PPI::Token::Operator')) { return }
-	if($elem->content() ne '->')            { return }
-
+sub operatorViolates {
+	my ($self,$elem)=@_;
+	if($elem->content() ne '->') { return }
 	my $next=$elem->snext_sibling();
 	if(!$next) { return }
 	if($next->isa('PPI::Token::Word') && is_method_call($next)) { return }
-
 	if($next->isa('PPI::Structure::Subscript')) { return $self->invalid($elem) }
 	if($next->isa('PPI::Structure::List'))      { return $self->invalid($elem) }
 	if($next->isa('PPI::Token::Cast'))          { return $self->invalid($elem) }
+	return;
+}
+
+sub violates {
+	my ($self,$elem,undef)=@_;
+
+	if($elem->isa('PPI::Token::Operator')) { return $self->operatorViolates($elem) }
+
+	if($elem->isa('PPI::Token::Quote')) {
+		if(!$$self{_interpolation}) { return }
+		my $content=$elem->content();
+		my $string=PPIx::QuoteLike->new($content);
+		my @tocheck=$string->children();
+		while(@tocheck) {
+			my $node=shift(@tocheck);
+			if($node->isa('PPIx::QuoteLike::Token::Interpolation')) {
+				$content=$node->content();
+				my $doc=PPI::Document->new(\$content);
+				foreach my $inner (@{$doc->find('PPI::Token::Operator')||[]}) {
+					if(my $violation=$self->operatorViolates($inner)) { return $violation }
+				}
+			}
+		}
+		return;
+	}
 
 	return;
 }
@@ -81,7 +112,7 @@ Post-conditional and post-fix operators are harder to read and maintain, especia
 	my @A=@$x;                   # yes
 
 	my $y=$x->method();          # yes
-	print "$x->method();"        # invalid code
+	print "$x->method();"        # invalid code (not checked)
 
 	print "Name:  $href->{name}" # no  (not yet checked)
 	print "Name:  $$href{name}"  # yes (not yet checked)
@@ -100,6 +131,10 @@ Not presently well-tested.  There may be some false violations.
 Inside Quote/QuoteLike expressions, L<String::InterpolatedVariables> will be used in the future to establish consistency.
 
 Proposed:  Because C<@$x> is a direct casting operation, whereas C<@{ $x }> is a block operator, performance goals may suggest that the latter is a violation of the expected pattern for sigils.  In particular it signals "there is a complicated expansion here", when it fact it is just meant as a direct casting operator.  Future configuration may support enabling required double sigils where possible.
+
+=head1 BUGS
+
+This implementation is primarily "Prohibit non-method arrows" at this time.
 
 =head1 SEE ALSO
 
