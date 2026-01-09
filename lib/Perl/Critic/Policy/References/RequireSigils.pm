@@ -28,8 +28,8 @@ sub supported_parameters {
 		},
 		{
 			name           => 'interpolation',
-			description    => 'Check interpolated strings for arrow-like patterns (not yet available).',
-			default_string => '0',
+			description    => 'Check interpolated strings for arrow-like patterns.',
+			default_string => '1',
 			behavior       => 'boolean',
 		},
 	);
@@ -114,15 +114,18 @@ Post-conditional and post-fix operators are harder to read and maintain, especia
 	my $y=$x->method();          # yes
 	print "$x->method();"        # invalid code (not checked)
 
-	print "Name:  $href->{name}" # no  (not yet checked)
-	print "Name:  $$href{name}"  # yes (not yet checked)
+	print "Name:  $href->{name}" # no
+	print "Name:  $$href{name}"  # yes
 
-	print "Item:  $aref->[1]"    # no  (not yet checked)
-	print "Item:  $$aref[1]"     # yes (not yet checked)
+	print "Item:  $aref->[1]"    # no
+	print "Item:  $$aref[1]"     # yes
 
 =head1 CONFIGURATION
 
-None.
+Violations within interpolated strings can be disabled by setting C<interpolation>:
+
+  [References::RequireSigils]
+  interpolation = 0
 
 =head1 NOTES
 
