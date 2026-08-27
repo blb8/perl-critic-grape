@@ -18,11 +18,13 @@
 				"Perl::Critic::Utils": "1.156",
 				"PPI::Document": "1.277",
 				"PPIx::QuoteLike": "0",
-				"Readonly": "2.05"
+				"Readonly": "2.05",
+				"Scalar::Util": "1.09"
 			}
 		},
 		"test": {
 			"requires": {
+				"PPI": "1.277",
 				"Perl::Critic": "1.156",
 				"Ref::Util": "0.204",
 				"Test::More": "1.302209"
