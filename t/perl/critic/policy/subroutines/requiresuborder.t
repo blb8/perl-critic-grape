@@ -62,6 +62,8 @@ subtest 'Invalid order'=>sub {
 		q|sub b{a();c();} sub a{} sub c{}|,
 		q|sub b{a()} sub a{b()}|,
 		#
+		# q|main(); sub main{"hi"}|, # not presently caught
+		#
 	) {
 		like(($critic->critique(\$code))[0],$failure,$code);
 	}

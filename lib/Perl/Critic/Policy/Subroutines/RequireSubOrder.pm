@@ -174,25 +174,134 @@ Perl::Critic::Policy::Subroutines::RequireSubOrder - Place subroutines in depend
 
 =head1 DESCRIPTION
 
-not here yet
+Subroutine dependencies are easier to manage when they are defined before they are called.  By organizing subroutines with the lower-level helpers appearing first (at the top), and the calling subroutines after (at the bottom), the code will be easier to understand and maintain.  This follows the common pattern of indicating module and helper imports first:
+
+  use Helpers qw/some functions/;
+  sub one { return some()+functions() }
+  sub two { return one() }
+  ... script that calls two()
+  exit();
+
+The reverse order, referred to here as I<backwards>, does function because Perl's compile step can (usually) find the subroutine definitions:
+
+  ... script that calls two()
+  exit();
+  sub two { return one() }
+  sub one { return some()+functions() }
+  use Helpers qw/some functions/;
+
+The inside-out order may, therefore, be the most confusing but is commonly encountered:
+
+  use Helpers qw/some functions/;
+  ... script that calls two()
+  exit();
+  sub two { return one() }
+  sub one { return some()+functions() }
+
+This policy enforces the first form, similar to a topological sort, with dependency groups appearing first and their calling subroutines appearing later.
 
 =head2 Motivation
 
-not here yet
+=head3 State and Globals
+
+A common pattern is to declare an outer C<my> variable as a file or package-level state variable, that adheres to the subroutine(s) where it's used:
+
+  my $value=1;
+  sub one { return $value }
+
+  sub main { return one() }
+
+  print main(),"\n";
+  exit();
+
+Suppose, however, that the "main program" is given priority at the top of the script:
+
+  print main(),"\n";
+  exit();
+
+  my $value=1;
+  sub one { return $value }
+
+  sub main { return one() }
+
+This compiles but gives a runtime warning, "Use of uninitialized value".  C<RequireSubOrder> does I<not> currently report this, but in scripts with large support functions, related failures can be difficult to identify when not following the packages-dependencies-script pattern.
+
+=head3 Optional parentheses
+
+As noted in L<perlsub>, parentheses are optional "if predeclared/imported".  This works:
+
+  sub one { return $_[0]+$_[1] }
+  sub two { return one 2,3 }
+
+This does not, however:
+
+  sub two { return one 2,3 }
+  sub one { return $_[0]+$_[1] }
+
+As noted in L<perldiag>, the compiler can guess the intent and suggests "Do you need to predeclare one?", but the issue may depend on a missing import instead of a declaration or definition.  C<RequireSubOrder> catches this issue early by insisting on the first form.
+
+=head3 Prototypes
+
+Subroutine calls can enforce declared prototypes:
+
+  sub one($$) { return $_[0]+$_[1] }
+  sub two { return one(2,3,4) }
+
+  -> Too many arguments for main::one
+
+Backwards declaration cannot, however:
+
+  sub two { return one(2,3,4) }
+  sub one($$) { return $_[0]+$_[1] }
+  print two(),"\n";
+
+  -> 5
+
+=head3 Inlining
+
+Declared subroutines may be inlined:
+
+  sub one() {1}
+  sub two { return one() }
+  print two(),"\n"
+
+This may be inspected with L<B::Deparse>:
+
+  sub one () {
+    1;
+  }
+  sub two {
+    return 1;
+  }
+  print two(), "\n";
+
+With backwards definitions:
+
+  sub two { return one() }
+  sub one() {1}
+  print two(),"\n"
+
+The code still runs and prints "1", but it is not inlined:
+
+  sub two {
+    return &one();
+  }
+  print two(), "\n";
+  sub one () { 1 }
 
 =head2 Supported behaviors
 
-Ignores undeclared functions, which are assumed to be imported.
+* Ignores undeclared functions, which are assumed to be imported.
 
-Supports inline C<package> declarations.
+* Supports inline C<package> declarations.
 
-Supports blocked C<package> declarations.
+* Supports blocked C<package> declarations.
 
-Supports package-prefixed calls.
+* Supports package-prefixed calls.
 
-Supports forward declarations.
+* Supports forward declarations.
 
-Reports cycles.
+* Reports cycles.
 
 =head1 CONFIGURATION
 
@@ -205,21 +314,19 @@ By default, only the latest dependency is given for a misplaced subroutine to ap
 
 =head2 Backwards ordering
 
-The default ordering is topological for the reasons provided above.  To instead apply a model where "all the dependent calls made by the subroutine appear I<after>":
+The default ordering is topological for the reasons provided above.  To instead apply a model where "all the dependent calls made by the subroutine appear I<after>", with the expectation that "I shall responsibly forward declare all functions+prototypes":
 
   [Subroutines::RequireSubOrder]
   backwards = 1
 
 =head2 Todo
 
-Perhaps consider alphabetical ordering within the same group.
+* Consider sorting of C<_private> versus C<public> names.
+
+* Consider alphabetical ordering within the same group.
 
 =head1 BUGS
 
-Nothing here yet.
-
-=head1 SEE ALSO
-
-Nothing here yet.
+Lexical subroutines may misreport.  Needs investigation.
 
 =cut
