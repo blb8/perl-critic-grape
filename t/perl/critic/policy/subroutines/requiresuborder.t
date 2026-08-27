@@ -7,12 +7,12 @@ use Perl::Critic;
 use PPI;
 use Perl::Critic::Policy::Subroutines::RequireSubOrder;
 
-use Test::More tests=>5;
+use Test::More tests=>6;
 
 my $failure=qr/dependency order/;
 
 subtest 'Valid order'=>sub {
-	plan tests=>19;
+	plan tests=>23;
 	my $critic=Perl::Critic->new(-profile=>'NONE',-only=>1,-severity=>1);
 	$critic->add_policy(-policy=>'Perl::Critic::Policy::Subroutines::RequireSubOrder');
 	#
@@ -35,6 +35,10 @@ subtest 'Valid order'=>sub {
 		q|{package One;sub a{}} sub b{}|,
 		q|{package One;sub a{}} sub a{external()}|,
 		q|{package One;sub a{}} sub a{} sub b{a()}|,
+		q|package One{sub a{}} sub a{}|,
+		q|package One{sub a{}} sub b{}|,
+		q|package One{sub a{}} sub a{external()}|,
+		q|package One{sub a{}} sub a{} sub b{a()}|,
 		#
 		q|sub a; sub b{a()} sub a{b()}|, # forward declaration
 		#
@@ -44,7 +48,7 @@ subtest 'Valid order'=>sub {
 };
 
 subtest 'Invalid order'=>sub {
-	plan tests=>11;
+	plan tests=>13;
 	my $critic=Perl::Critic->new(-profile=>'NONE',-only=>1,-severity=>1);
 	$critic->add_policy(-policy=>'Perl::Critic::Policy::Subroutines::RequireSubOrder');
 	#
@@ -55,18 +59,43 @@ subtest 'Invalid order'=>sub {
 		q|package One;sub a{};package main;sub b{a()} sub a{}|,
 		q|package One::Two;sub a{One::Two::b()} sub b{};package main;|,
 		q|package One::Two;sub a{One::Two::b()} sub b{};package main;|,
+		# q|package One::Two{sub a{One::Two::b()} sub b{}}|, # no work
+		# q|package One::Two{sub a{One::Two::b()} sub b{}}|, # no work
 		q|{package One;sub a{}} sub b{a()} sub a{}|,
+		q|package One{sub a{}} sub b{a()} sub a{}|,
 		q|package One;sub b{a()};package main;sub a{};package One;sub a{}|,
 		q|package One;sub b{One::a()};package main;sub a{};package One;sub a{}|,
 		#
 		q|sub b{a();c();} sub a{} sub c{}|,
 		q|sub b{a()} sub a{b()}|,
 		#
-		# q|main(); sub main{"hi"}|, # not presently caught
+		q|main(); sub main{"hi"}|,
 		#
 	) {
 		like(($critic->critique(\$code))[0],$failure,$code);
 	}
+};
+
+subtest 'Main callers'=>sub {
+	plan tests=>4;
+	my ($code,@critiques);
+	my $criticFwd=Perl::Critic->new(-profile=>'NONE',-only=>1,-severity=>1);
+	my $criticBwd=Perl::Critic->new(-profile=>'NONE',-only=>1,-severity=>1);
+	$criticFwd->add_policy(-policy=>'Perl::Critic::Policy::Subroutines::RequireSubOrder',-params=>{backwards=>0});
+	$criticBwd->add_policy(-policy=>'Perl::Critic::Policy::Subroutines::RequireSubOrder',-params=>{backwards=>1});
+	#
+	$code=q|main(); sub main{"hi"}|;
+	@critiques=$criticFwd->critique(\$code);
+	like($critiques[0],qr/dependency order.*main::main.*before caller on line 1/,"Forward:  $code");
+	@critiques=$criticBwd->critique(\$code);
+	ok(!@critiques,"Backward:  $code");
+	#
+	$code=q|sub main{"hi"} main()|;
+	@critiques=$criticFwd->critique(\$code);
+	ok(!@critiques,"Forward:  $code");
+	@critiques=$criticBwd->critique(\$code);
+	like($critiques[0],qr/dependency order.*main::main.*after caller on line 1/,"Backward:  $code");
+	#
 };
 
 subtest 'Parameter "all"'=>sub {

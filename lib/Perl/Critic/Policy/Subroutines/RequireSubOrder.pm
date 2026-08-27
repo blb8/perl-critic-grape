@@ -107,6 +107,17 @@ sub prepare_to_scan_document {
 			# there might be some issue if $node->forward() is true
 		}
 		elsif($node->isa('PPI::Statement::Compound')||$node->isa('PPI::Structure::Block')) { $self->prepare_to_scan_document($node,$package) }
+		elsif($node->isa('PPI::Statement')) {
+			$$self{$cachekey}{outer}{"${package}::"}//={
+				package=>$package,
+				node=>$doc,
+				calls=>{},
+			};
+			my $calls=$$self{$cachekey}{outer}{"${package}::"}{calls};
+			foreach my $call ($self->_blockcalls($package,$node)) {
+				push @{$$calls{$call}},{loc=>$node->location(),call=>$call};
+			}
+		}
 		# else do nothing
 	}
 	return 1;
@@ -145,8 +156,8 @@ sub violates {
 	foreach my $dep (@{$$sub{calls}}) {
 		my @deps=_sortloc(values(%{$$self{$cachekey}{package}{$$sub{package}}{$dep}}));
 		if(@deps) {
-			if($$self{_backwards} && (_cmploc($deps[-1]{loc},$elem->location())<0)){ push @dependencies,$deps[0] }
-			elsif                    (_cmploc($deps[0]{loc}, $elem->location())>0) { push @dependencies,$deps[-1] }
+			if   ( $$self{_backwards} && (_cmploc($deps[-1]{loc},$elem->location())<0)){ push @dependencies,$deps[0] }
+			elsif(!$$self{_backwards} && (_cmploc($deps[0]{loc}, $elem->location())>0)){ push @dependencies,$deps[-1] }
 		}
 	}
 	if(@dependencies) {
@@ -156,6 +167,20 @@ sub violates {
 		@dependencies=join(q{, },map {sprintf("'%s::%s'%s",@$_{qw/package name cyclic/})} @dependencies);
 		if($$self{_backwards}) { return $self->invalid($elem,sprintf("move %s after '%s::%s'",$dependencies[0],$$sub{package},$elem->name())) }
 		else                   { return $self->invalid($elem,sprintf("move '%s::%s' after %s",$$sub{package},$elem->name(),$dependencies[0])) }
+	}
+	#
+	@dependencies=();
+	if(defined($$self{$cachekey}{outer}{"$$sub{package}::"})) {
+		my @deps=_sortloc(@{$$self{$cachekey}{outer}{"$$sub{package}::"}{calls}{$$sub{name}}});
+		if(@deps) {
+			if   ( $$self{_backwards}&&(_cmploc($deps[-1]{loc},$elem->location())>0)) { push @dependencies,$deps[-1] }
+			elsif(!$$self{_backwards}&&(_cmploc($deps[0]{loc}, $elem->location())<0))  { push @dependencies,$deps[0] }
+		}
+		if(@dependencies) {
+			@dependencies=_sortloc(@dependencies);
+			if($$self{_backwards}) { return $self->invalid($elem,sprintf("move '%s::%s' after caller on line %d",@$sub{qw/package name/},$dependencies[-1]{loc}[0])) }
+			else                   { return $self->invalid($elem,sprintf("move '%s::%s' before caller on line %d",@$sub{qw/package name/},$dependencies[0]{loc}[0])) }
+		}
 	}
 	return;
 }
@@ -204,7 +229,7 @@ This policy enforces the first form, similar to a topological sort, with depende
 
 =head3 State and Globals
 
-A common pattern is to declare an outer C<my> variable as a file or package-level state variable, that adheres to the subroutine(s) where it's used:
+A common pattern is to declare an outer C<my> variable as a file or package-level state variable that adheres to the subroutine(s) where it's used:
 
   my $value=1;
   sub one { return $value }
@@ -224,7 +249,9 @@ Suppose, however, that the "main program" is given priority at the top of the sc
 
   sub main { return one() }
 
-This compiles but gives a runtime warning, "Use of uninitialized value".  C<RequireSubOrder> does I<not> currently report this, but in scripts with large support functions, related failures can be difficult to identify when not following the packages-dependencies-script pattern.
+This compiles but gives a runtime warning, "Use of uninitialized value".  C<RequireSubOrder> will report that these subroutines (eg C<main>) need to be moved before their callers.
+
+Note that in scripts with large support functions, related failures can be difficult to identify when not following the packages-dependencies-script pattern.
 
 =head3 Optional parentheses
 
@@ -291,17 +318,19 @@ The code still runs and prints "1", but it is not inlined:
 
 =head2 Supported behaviors
 
-* Ignores undeclared functions, which are assumed to be imported.
+* Supports forward declarations.
 
 * Supports inline C<package> declarations.
 
-* Supports blocked C<package> declarations.
+* Supports C<package> declarations inside blocks.
 
 * Supports package-prefixed calls.
 
-* Supports forward declarations.
-
 * Reports cycles.
+
+* Reports definition-after-use in scripts.
+
+* Ignores undeclared functions, which are assumed to be imported.
 
 =head1 CONFIGURATION
 
@@ -327,6 +356,10 @@ The default ordering is topological for the reasons provided above.  To instead 
 
 =head1 BUGS
 
-Lexical subroutines may misreport.  Needs investigation.
+* Obviously!
+
+* Does B<not> support C<package {...}> declarations.
+
+* Lexical subroutines may misreport.  Needs investigation.
 
 =cut
