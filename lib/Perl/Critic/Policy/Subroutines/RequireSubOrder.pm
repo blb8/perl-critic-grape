@@ -83,14 +83,12 @@ sub initialize_if_enabled {
 	return 1;
 }
 
-sub prepare_to_scan_document {
+sub builder {
 	my ($self,$doc,$package)=@_;
-	if(!$cachekey) { return 0 }
-	%{$$self{$cachekey}}=();
 	$package//='main';
 	foreach my $node ($doc->children()) {
 		if($node->isa('PPI::Statement::Package')) {
-			if(my $block=$node->find_first('PPI::Structure::Block')) { $self->prepare_to_scan_document($block,$node->namespace()) }
+			if(my $block=$node->find_first('PPI::Structure::Block')) { $self->builder($block,$node->namespace()) }
 			else { $package=$node->namespace() }
 		}
 		elsif($node->isa('PPI::Statement::Sub')) {
@@ -107,7 +105,7 @@ sub prepare_to_scan_document {
 			};
 			$$self{$cachekey}{package}{$package}{$node->name()}{$loc}=$$csub{$loc};
 		}
-		elsif($node->isa('PPI::Statement::Compound')||$node->isa('PPI::Structure::Block')) { $self->prepare_to_scan_document($node,$package) }
+		elsif($node->isa('PPI::Statement::Compound')||$node->isa('PPI::Structure::Block')) { $self->builder($node,$package) }
 		elsif($node->isa('PPI::Statement')) {
 			$$self{$cachekey}{outer}{"${package}::"}//={package=>$package,node=>$doc,calls=>{}};
 			my $calls=$$self{$cachekey}{outer}{"${package}::"}{calls};
@@ -116,6 +114,13 @@ sub prepare_to_scan_document {
 		# else do nothing
 	}
 	return 1;
+}
+
+sub prepare_to_scan_document {
+	my ($self,$doc,$package)=@_;
+	if(!$cachekey) { return 0 }
+	%{$$self{$cachekey}}=();
+	return $self->builder($doc,$package);
 }
 
 sub _cmploc {

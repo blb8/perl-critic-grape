@@ -48,7 +48,7 @@ subtest 'Valid order'=>sub {
 };
 
 subtest 'Invalid order'=>sub {
-	plan tests=>14;
+	plan tests=>15;
 	my $critic=Perl::Critic->new(-profile=>'NONE',-only=>1,-severity=>1);
 	$critic->add_policy(-policy=>'Perl::Critic::Policy::Subroutines::RequireSubOrder');
 	#
@@ -69,6 +69,7 @@ subtest 'Invalid order'=>sub {
 		q|sub b{a()} sub a{b()}|,
 		#
 		q|main(); sub main{"hi"}|,
+		q|main();if(1){1};sub main{"hi"}|,
 		#
 	) {
 		like(($critic->critique(\$code))[0],$failure,$code);
