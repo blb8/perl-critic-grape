@@ -48,7 +48,7 @@ subtest 'Valid order'=>sub {
 };
 
 subtest 'Invalid order'=>sub {
-	plan tests=>13;
+	plan tests=>14;
 	my $critic=Perl::Critic->new(-profile=>'NONE',-only=>1,-severity=>1);
 	$critic->add_policy(-policy=>'Perl::Critic::Policy::Subroutines::RequireSubOrder');
 	#
@@ -59,8 +59,7 @@ subtest 'Invalid order'=>sub {
 		q|package One;sub a{};package main;sub b{a()} sub a{}|,
 		q|package One::Two;sub a{One::Two::b()} sub b{};package main;|,
 		q|package One::Two;sub a{One::Two::b()} sub b{};package main;|,
-		# q|package One::Two{sub a{One::Two::b()} sub b{}}|, # no work
-		# q|package One::Two{sub a{One::Two::b()} sub b{}}|, # no work
+		q|package One::Two{sub a{One::Two::b()} sub b{}}|,
 		q|{package One;sub a{}} sub b{a()} sub a{}|,
 		q|package One{sub a{}} sub b{a()} sub a{}|,
 		q|package One;sub b{a()};package main;sub a{};package One;sub a{}|,

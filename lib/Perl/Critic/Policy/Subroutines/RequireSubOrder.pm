@@ -89,7 +89,10 @@ sub prepare_to_scan_document {
 	%{$$self{$cachekey}}=();
 	$package//='main';
 	foreach my $node ($doc->children()) {
-		if($node->isa('PPI::Statement::Package')) { $package=$node->namespace() }
+		if($node->isa('PPI::Statement::Package')) {
+			if(my $block=$node->find_first('PPI::Structure::Block')) { $self->prepare_to_scan_document($block,$node->namespace()) }
+			else { $package=$node->namespace() }
+		}
 		elsif($node->isa('PPI::Statement::Sub')) {
 			my $loc=_loc($node);
 			$$self{$cachekey}{sub}{$node->name()}//={};
@@ -103,20 +106,12 @@ sub prepare_to_scan_document {
 				calls=>[$self->_blockcalls($package,$node->block())],
 			};
 			$$self{$cachekey}{package}{$package}{$node->name()}{$loc}=$$csub{$loc};
-			#
-			# there might be some issue if $node->forward() is true
 		}
 		elsif($node->isa('PPI::Statement::Compound')||$node->isa('PPI::Structure::Block')) { $self->prepare_to_scan_document($node,$package) }
 		elsif($node->isa('PPI::Statement')) {
-			$$self{$cachekey}{outer}{"${package}::"}//={
-				package=>$package,
-				node=>$doc,
-				calls=>{},
-			};
+			$$self{$cachekey}{outer}{"${package}::"}//={package=>$package,node=>$doc,calls=>{}};
 			my $calls=$$self{$cachekey}{outer}{"${package}::"}{calls};
-			foreach my $call ($self->_blockcalls($package,$node)) {
-				push @{$$calls{$call}},{loc=>$node->location(),call=>$call};
-			}
+			foreach my $call ($self->_blockcalls($package,$node)) { push @{$$calls{$call}},{loc=>$node->location(),call=>$call} }
 		}
 		# else do nothing
 	}
@@ -320,9 +315,11 @@ The code still runs and prints "1", but it is not inlined:
 
 * Supports forward declarations.
 
-* Supports inline C<package> declarations.
+* Supports inline C<package Pkg; ...; package main; ...> declarations.
 
-* Supports C<package> declarations inside blocks.
+* Supports C<{package Pkg; ...}> declarations inside blocks.
+
+* Supports C<package Pkg {...}> block declarations.
 
 * Supports package-prefixed calls.
 
@@ -357,8 +354,6 @@ The default ordering is topological for the reasons provided above.  To instead 
 =head1 BUGS
 
 * Obviously!
-
-* Does B<not> support C<package {...}> declarations.
 
 * Lexical subroutines may misreport.  Needs investigation.
 
