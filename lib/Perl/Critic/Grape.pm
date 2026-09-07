@@ -37,6 +37,10 @@ Do not perform manual ref checks.
 
 Use sigils to signal type.  Only use dereferencing arrows for method calls.
 
+=item L<Subroutines::RequireConsistentReturn|Perl::Critic::Policy::Subroutines::RequireConsistentReturn>
+
+Don't use an implicit return in a subroutine with explicit returns.
+
 =item L<Subroutines::RequireSubOrder|Perl::Critic::Policy::Subroutines::RequireSubOrder>
 
 Place subroutines in dependency order.
