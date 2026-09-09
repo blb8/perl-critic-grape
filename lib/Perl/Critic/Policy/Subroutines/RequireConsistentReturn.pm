@@ -146,7 +146,7 @@ sub violates {
 		if($first->isa('PPI::Token::Word')    &&$terminators{$first->content()}) { return }
 		if($first->isa('PPI::Token::Operator')&&$terminators{$first->content()}) { return }
 	}
-	return $self->invalid($elem);
+	return $self->invalid($elem->schild(0));
 }
 
 #-----------------------------------------------------------------------------
