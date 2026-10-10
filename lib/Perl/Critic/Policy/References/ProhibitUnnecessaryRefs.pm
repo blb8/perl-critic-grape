@@ -9,7 +9,7 @@ use Scalar::Util qw/refaddr/;
 use Perl::Critic::Utils qw/:severities :classification/;
 use base 'Perl::Critic::Policy';
 
-our $VERSION = '0.1.0';
+our $VERSION = '0.1.1';
 
 Readonly::Scalar my $DESC=>q{Use Perl basic types.};
 Readonly::Scalar my $EXPL=>undef;
