@@ -117,7 +117,7 @@ sub prepare_to_scan_document {
 	my ($self,$doc)=@_;
 	if(!$cachekey) { return 1 }
 	$$self{$cachekey}={cache=>{}};
-	my ($cache)=@{$$self{$cachekey}}{qw/cache/};
+	my $cache=$$self{$cachekey}{cache};
 	foreach my $sub (@{ $doc->find('PPI::Statement::Sub')||[] }) {
 		my $block=$sub->block();
 		if(!$block) { next }
