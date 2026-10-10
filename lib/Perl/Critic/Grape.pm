@@ -33,6 +33,10 @@ Do not use inline do blocks.
 
 Do not perform manual ref checks.
 
+=item L<References::ProhibitUnnecessaryRefs|Perl::Critic::Policy::References::ProhibitUnnecessaryRefs>
+
+Use basic arrays and hashes.
+
 =item L<References::RequireSigils|Perl::Critic::Policy::References::RequireSigils>
 
 Use sigils to signal type.  Only use dereferencing arrows for method calls.
