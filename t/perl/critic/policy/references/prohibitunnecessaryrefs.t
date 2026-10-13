@@ -309,7 +309,7 @@ subtest 'Broken cases'=>sub {
 };
 
 subtest 'Option self'=>sub {
-	plan tests=>6;
+	plan tests=>8;
 	my $critic=Perl::Critic->new(-profile=>'NONE',-only=>1,-severity=>1);
 	$critic->add_policy(-policy=>'Perl::Critic::Policy::References::ProhibitUnnecessaryRefs',-params=>{self=>0});
 	foreach my $code (
@@ -323,7 +323,7 @@ subtest 'Option self'=>sub {
 		q|
 			sub thing {
 				my $self=shift;
-				if($$self{thing}) { return }
+				if($self->{thing}) { return }
 				return;
 			}
 		|,
@@ -331,7 +331,14 @@ subtest 'Option self'=>sub {
 			sub thing {
 				my $self={};
 				$$self{thing}=5;
-				return bless($self,'C');
+				$$self{hi};
+			}
+		|,
+		q|
+			sub thing {
+				my $self={};
+				$self->{thing}=5;
+				$$self{hi};
 			}
 		|,
 	) {
@@ -360,6 +367,13 @@ subtest 'Option self'=>sub {
 				my $self={};
 				$$self{thing}=5;
 				return bless($self,'C');
+			}
+		|,
+		q|
+			sub thing {
+				my $self={};
+				$self->{thing}=5;
+				$$self{hi};
 			}
 		|,
 	) {
