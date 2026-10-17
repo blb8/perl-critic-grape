@@ -53,6 +53,10 @@ Place subroutines in dependency order.
 
 Use array and hash slices for lookup sequences.
 
+=item L<Variables::ProhibitExcessiveNames|Perl::Critic::Policy::Variables::ProhibitExcessiveNames>
+
+Use concise variable and subroutine names.
+
 =item L<Variables::ProhibitTopicIterator|Perl::Critic::Policy::Variables::ProhibitTopicIterator>
 
 Always use named loop control variables.
