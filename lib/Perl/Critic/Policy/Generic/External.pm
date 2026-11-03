@@ -51,7 +51,7 @@ sub retrieveFiles {
 	if($$self{_filetsv}) {
 		if($$self{files}&&!$$self{files}{$docfn}) { return }
 		my @violations;
-		open(my $fh,'<',$$self{_filetsv});
+		open(my $fh,'<',$$self{_filetsv}) or return;
 		while(<$fh>) { chomp;
 			if   (/^# Description for (\w+::\w+):\s*(.*)$/) { $$self{$cachekey}{desc}{$1}=$2 }
 			elsif(/^# Explanation for (\w+::\w+):\s*(.*)$/) { $$self{$cachekey}{expl}{$1}=$2 }
@@ -77,12 +77,19 @@ sub retrieveFiles {
 			|| ($$a[2]<=>$$b[2])
 			} @violations;
 	}
+	# the previous block may return; if supporting multiple input configs, move that into helper
 	return;
 }
 
 sub prepare_to_scan_document {
 	my ($self,$doc)=@_;
 	if(!$cachekey) { return 1 }
+	%{$$self{$cachekey}}=(
+		desc=>{},
+		expl=>{},
+		files=>{},
+		violations=>[],
+	);
 	$self->retrieveFiles($doc->filename());
 	return 1;
 }

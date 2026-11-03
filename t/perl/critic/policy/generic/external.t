@@ -29,7 +29,8 @@ my $ourpolicy='Perl::Critic::Policy::Generic::External';
 sub tmpfile { return tempfile(undef,UNLINK=>1) }
 
 subtest 'Require configuration to activate'=>sub {
-	plan tests=>2;
+	plan tests=>3;
+	my ($tmpfh,$tmpfn)=tmpfile();
 	my $critic;
 	my %opts=(
 		filetsv=>'',
@@ -40,9 +41,14 @@ subtest 'Require configuration to activate'=>sub {
 	is(scalar($critic->policies()),0,'Zero options enabled');
 	#
 	$critic=Perl::Critic->new(-profile=>'NONE',-only=>1,-severity=>1);
-	$critic->add_policy(-policy=>$ourpolicy,-params=>{%opts,filetsv=>'/dev/null'});
+	$critic->add_policy(-policy=>$ourpolicy,-params=>{%opts,filetsv=>$tmpfn});
 	is(scalar($critic->policies()),1,'filetsv enabled');
 	#
+	my ($cycles,$fn)=(100,int(rand(1e6)));
+	while($cycles--&&(-e "/dev/null$fn")) { $fn=int(rand(1e6)) }
+	$critic=Perl::Critic->new(-profile=>'NONE',-only=>1,-severity=>1);
+	$critic->add_policy(-policy=>$ourpolicy,-params=>{%opts,filetsv=>"/dev/null$fn"});
+	is_deeply([$critic->critique($tmpfn)],[],'filetsv:  missing file');
 };
 
 subtest 'TSV file format'=>sub {
