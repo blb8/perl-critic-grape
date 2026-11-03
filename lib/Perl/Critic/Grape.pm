@@ -29,6 +29,10 @@ Built-in functions called without parentheses.
 
 Do not use inline do blocks.
 
+=item L<Generic::External|Perl::Critic::Policy::Generic::External>
+
+Dynamically ingest violations from external files, Copilot, ChatGPT, Claude.
+
 =item L<References::ProhibitRefChecks|Perl::Critic::Policy::References::ProhibitRefChecks>
 
 Do not perform manual ref checks.

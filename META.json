@@ -24,6 +24,7 @@
 		},
 		"test": {
 			"requires": {
+				"File::Temp": "0.2301",
 				"PPI": "1.277",
 				"Perl::Critic": "1.156",
 				"Ref::Util": "0.204",
