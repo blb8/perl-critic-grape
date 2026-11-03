@@ -6,7 +6,7 @@ use warnings;
 use Perl::Critic::Utils qw/:severities/;
 use base 'Perl::Critic::Policy';
 
-our $VERSION = '0.1.3';
+our $VERSION = '0.1.4';
 
 sub supported_parameters {
 	return (
